@@ -27,6 +27,7 @@ import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
+import io.realm.RealmQuery;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
@@ -61,6 +62,8 @@ public class MainActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         MenuItem menuItem = menu.findItem(R.id.search_menu_search_view);
         mSearchView = (SearchView) menuItem.getActionView();
+        mSearchView.setOnQueryTextListener(mOnQueryTextListener);
+
         return true;
     }
 
@@ -147,17 +150,29 @@ public class MainActivity extends AppCompatActivity {
         });
 
         reloadListView();
-
-        //課題質問:カテゴリを入力できるようにする・ActionBarを表示する　というところまではできたのですが、検索窓からの文字の受け取り方が分からないので、ヒントをいただけますでしょうか。
-        //Error:(151, 81) エラー: <anonymous jp.techacademy.yuto.hashiba.taskapp02.MainActivity$5>はabstractでなく、OnQueryTextListener内のabstractメソッドonQueryTextChange(String)をオーバーライドしません
-//        mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-//            @Override
-//            public boolean onQueryTextSubmit(String searchWord) {
-//                Log.d("hoge", searchWord + "です。");
-//                return true;
-//            }
-//        });
     }
+
+
+    private SearchView.OnQueryTextListener mOnQueryTextListener = new SearchView.OnQueryTextListener() {
+        @Override
+        public boolean onQueryTextSubmit(String searchWord) {
+            RealmQuery<Task> searchRealmResults1 = mRealm.where(Task.class);
+            searchRealmResults1.equalTo("category", searchWord);
+
+            RealmResults<Task> searchRealmResults2 = searchRealmResults1.findAll();
+
+            mTaskAdapter.setTaskList(mRealm.copyFromRealm(searchRealmResults2));
+            mListView.setAdapter(mTaskAdapter);
+            mTaskAdapter.notifyDataSetChanged();
+
+            return true;
+        }
+        @Override
+        public boolean onQueryTextChange(String newText) {
+            return false;
+        }
+    };
+
 
     private void reloadListView (){
         RealmResults<Task> taskRealmResults = mRealm.where(Task.class).findAllSorted("date", Sort.DESCENDING);
